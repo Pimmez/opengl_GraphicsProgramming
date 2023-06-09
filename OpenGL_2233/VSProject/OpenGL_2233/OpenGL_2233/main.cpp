@@ -4,21 +4,30 @@
 #include <glad/glad.h> 
 #include <GLFW/glfw3.h>
 
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
+
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
+
 
 //Forward Declaration
 void processInput(GLFWwindow* window);
 int init(GLFWwindow*& window);
-void createTriangle(GLuint& vao, GLuint &ebo, int& size, int& numIndices);
+void createGeometry(GLuint& vao, GLuint &ebo, int& size, int& numIndices);
 void createShaders();
 void createProgram(GLuint& programID, const char* vertex, const char* fragment);
+GLuint loadTexture(const char* path);
+
 
 //Utilities
 void loadFile(const char* filename, char*& output);
 
-//Program IDs
+//Shader Programs
 GLuint simpleProgram;
+
+const int WIDTH = 1280, HEIGHT = 720;
 
 int main() {
 
@@ -34,10 +43,24 @@ int main() {
 
 	GLuint triangleVAO, triangleEBO;
 	int triangleSize, triangleIndexCount;
-	createTriangle(triangleVAO, triangleEBO, triangleSize, triangleIndexCount);
+	createGeometry(triangleVAO, triangleEBO, triangleSize, triangleIndexCount);
+
+	GLuint boxTex = loadTexture("textures/container.png");
 
 	//Tell opengl to create viewport
-	glViewport(0, 0, 1280, 720);
+	glViewport(0, 0, WIDTH, HEIGHT);
+
+	//Matrices!
+	glm::mat4 world = glm::mat4(1.0f);
+	world = glm::rotate(world, glm::radians(45.0f), glm::vec3(0, 1, 0));
+	world = glm::scale(world, glm::vec3(1, 1, 1));
+	world = glm::translate(world, glm::vec3(0, 0, 0));
+
+	glm::mat4 view = glm::lookAt(glm::vec3(0, 2.5f, -5.0f), glm::vec3(0, 0, 0), glm::vec3(0, 1, 0));
+
+	glm::mat4 projection = glm::perspective(45.0f, WIDTH / (float)HEIGHT, 0.1f, 100.0f);
+
+	glm::vec3 lightPosition = glm::vec3(3, 3, 1);
 
 	//Rendering loop
 	while (!glfwWindowShouldClose(window))
@@ -50,6 +73,15 @@ int main() {
 		glClear(GL_COLOR_BUFFER_BIT);
 
 		glUseProgram(simpleProgram);
+
+		glUniformMatrix4fv(glGetUniformLocation(simpleProgram, "world"), 1, GL_FALSE, glm::value_ptr(world));
+		glUniformMatrix4fv(glGetUniformLocation(simpleProgram, "view"), 1, GL_FALSE, glm::value_ptr(view));
+		glUniformMatrix4fv(glGetUniformLocation(simpleProgram, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
+
+		//glUniform3fv(glGetUniformLocation(simpleProgram, "lightPosition"), 1, glm::value_ptr(lightPosition));
+
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, boxTex); 
 
 		glBindVertexArray(triangleVAO);
 		//glDrawArrays(GL_TRIANGLES, 0, triangleSize);
@@ -81,7 +113,7 @@ int init(GLFWwindow*& window)
 
 
 	//Create window & make active context	
-	window = glfwCreateWindow(1280, 720, "OpenGL_2233", NULL, NULL);
+	window = glfwCreateWindow(WIDTH, HEIGHT, "OpenGL_2233", NULL, NULL);
 	if (window == NULL)
 	{
 		std::cout << "Failed to create GLFW window" << std::endl;
@@ -101,7 +133,7 @@ int init(GLFWwindow*& window)
 	return 0;
 }
 
-void createTriangle(GLuint& vao, GLuint &ebo, int& size, int &numIndices)
+void createGeometry(GLuint& vao, GLuint &ebo, int& size, int &numIndices)
 {
 	/* Makes Square or Triangle based on vertices & indices with color generated in the shader
 	//position				//color
@@ -205,6 +237,12 @@ void createTriangle(GLuint& vao, GLuint &ebo, int& size, int &numIndices)
 
 	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, stride, (void*)(3 *  sizeof(float)));
 	glEnableVertexAttribArray(1);
+
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, stride, (void*)(6 * sizeof(float)));
+	glEnableVertexAttribArray(2);
+
+	glVertexAttribPointer(3, 3, GL_FLOAT, GL_TRUE, stride, (void*)(8 * sizeof(float)));
+	glEnableVertexAttribArray(3);
 }
 
 void createShaders()
@@ -296,4 +334,39 @@ void loadFile(const char* filename, char*& output)
 		//if the file failed to open, set the char pointer to NULL
 		output = NULL;
 	}
+}
+
+GLuint loadTexture(const char* path)
+{
+	GLuint textureID;
+	glGenTextures(1, &textureID);
+	glBindTexture(GL_TEXTURE_2D, textureID);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+	int width, height, numChannels;
+	unsigned char* data = stbi_load(path, &width, &height, &numChannels, 0);
+	if (data)
+	{
+		if (numChannels == 3)
+		{
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+		}
+		else if (numChannels == 4)
+		{
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+		}
+		glGenerateMipmap(GL_TEXTURE_2D);
+	}
+	else
+	{
+		std::cout << "ERROR LOADING TEXTURE" << path << std::endl;
+	}
+
+	stbi_image_free(data);
+
+	glBindTexture(GL_TEXTURE_2D, 0);
+
+	return textureID;
 }
