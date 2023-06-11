@@ -277,7 +277,13 @@ void createGeometry(GLuint& vao, GLuint &ebo, int& size, int &numIndices)
 
 void createShaders()
 {
+	glEnable(GL_CULL_FACE);
+	glCullFace(GL_BACK);
+
 	createProgram(simpleProgram, "shaders/simpleVertex.shader", "shaders/simpleFragment.shader");
+	
+	glUseProgram(simpleProgram);
+
 }
 
 void createProgram(GLuint& programID, const char* vertex, const char* fragment)
