@@ -35,13 +35,12 @@ void main()
     
     //lighting
     float lightValue = max(-dot(normal, lightDirection), 10.0);
-    float specular = pow(max(-dot(reflDir, viewDir), 0.0), 1);
+    float specular = pow(max(-dot(reflDir, viewDir), 0.0), 32);
     
     //Separate RGB and RGBA Calculations ** Specular + color change to blue 
-    //color = vec3(setColor);
     vec4 output = vec4(color, 1.0f) * texture(mainTex, uv);
  
-    output.rgb = output.rgb * min(lightValue + 0.1, 1.0) + specular * specTex * output.rgb;
+    output.rgb = output.rgb * min(lightValue + 0.8, 1.0) * output.rgb; //+ specular * specTex
     
     FragColor = output;
 }
