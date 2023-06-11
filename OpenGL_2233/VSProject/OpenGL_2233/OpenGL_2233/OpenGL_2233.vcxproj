@@ -147,6 +147,8 @@
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="shaders\model.fs" />
+    <None Include="shaders\model.vs" />
     <None Include="shaders\simpleFragment.shader" />
     <None Include="shaders\simpleVertex.shader" />
     <None Include="shaders\skyFragment.shader" />
@@ -155,6 +157,8 @@
     <None Include="shaders\terrainVertex.shader" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="mesh.h" />
+    <ClInclude Include="model.h" />
     <ClInclude Include="stb_image.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
