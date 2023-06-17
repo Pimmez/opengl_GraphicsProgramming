@@ -67,5 +67,8 @@
     <None Include="resources\shaders\starBox.fs">
       <Filter>Resource Files\resources\shaders</Filter>
     </None>
+    <None Include="resources\shaders\planet.fs">
+      <Filter>Resource Files\resources\shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>
