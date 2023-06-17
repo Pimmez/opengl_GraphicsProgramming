@@ -71,5 +71,8 @@
       <Filter>Resource Files\resources\shaders</Filter>
     </None>
     <None Include="resources\shaders\moon.fs" />
+    <None Include="resources\shaders\mars.fs">
+      <Filter>Resource Files\resources\shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>

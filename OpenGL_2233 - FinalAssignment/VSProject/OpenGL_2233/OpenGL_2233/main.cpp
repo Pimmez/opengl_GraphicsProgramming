@@ -29,7 +29,10 @@ void renderTerrain();
 void renderModel(Model* model, glm::vec3 pos, glm::vec3 rot, glm::vec3 scale);
 void renderPlanet();
 void renderMoon(glm::mat4 parentPosition);
-float distance(int x1, int y1, int z1, int x2, int y2, int z2);
+void renderMars();
+void renderPhobos(glm::mat4 parentPosition);
+void renderDeimos(glm::mat4 parentPosition);
+
 
 unsigned int GeneratePlane(const char* heightmap, unsigned char*& data, GLenum format, int comp, float hScale, float xzScale, unsigned int& indexCount, unsigned int& heightmapID);
 
@@ -42,9 +45,10 @@ bool keys[1024];
 
 //Utilities
 void loadFile(const char* filename, char*& output);
+float distance(int x1, int y1, int z1, int x2, int y2, int z2);
 
 //Shader Programs
-GLuint simpleProgram, skyProgram, terrainProgram, modelProgram, starProgram, planetProgram, moonProgram;
+GLuint simpleProgram, skyProgram, terrainProgram, modelProgram, starProgram, planetProgram, moonProgram, marsProgram, phobosProgram, deimosProgram;
 
 const int WIDTH = 1280, HEIGHT = 720;
 
@@ -65,10 +69,11 @@ glm::quat camQuat = glm::quat(glm::vec3(glm::radians(camPitch), glm::radians(cam
 GLuint terrainVAO, terrainIndexCount, heightmapID, heightNormalID;
 unsigned char* heightmapTexture;
 
-GLuint dirt, sand, grass, snow, rock, cubeMap, day, night, clouds, moon;
+GLuint dirt, sand, grass, snow, rock, cubeMap, day, night, clouds, moon, mars, phobos, deimos;
 
 Model* backpack, * sphere;
 
+//modes
 int modes = 0;
 
 
@@ -88,9 +93,6 @@ int main() {
 	terrainVAO = GeneratePlane("resources/textures/heightmap.png", heightmapTexture, GL_RGBA, 4, 250.0f, 5.0f, terrainIndexCount, heightmapID);
 	heightNormalID = loadTexture("resources/textures/heightnormal.png");
 
-	//GLuint boxTex = loadTexture("resources/textures/container.png");
-	//GLuint boxNormal = loadTexture("resources/textures/container_normalMap.png");
-
 	dirt = loadTexture("resources/textures/dirt.jpg");
 	snow = loadTexture("resources/textures/snow.jpg");
 	sand = loadTexture("resources/textures/sand.jpg");
@@ -101,7 +103,11 @@ int main() {
 	night = loadTexture("resources/textures/night.jpg");
 	clouds = loadTexture("resources/textures/clouds.jpg", 0, GL_REPEAT, GL_CLAMP_TO_EDGE);
 	moon = loadTexture("resources/textures/2k_moon.jpg");
+	mars = loadTexture("resources/textures/mars.jpg");
+	deimos = loadTexture("resources/textures/deimos.jpg");
+	phobos = loadTexture("resources/textures/phobos.jpg");
 
+	//CubeMap textures
 	std::vector<string> fileNames =
 	{
 		"resources/textures/space-cubemap/right.png",
@@ -112,13 +118,11 @@ int main() {
 		"resources/textures/space-cubemap/back.png"
 	};
 
-
 	cubeMap = LoadCubeMap(fileNames);
 
 	stbi_set_flip_vertically_on_load(true);
 
 	sphere = new Model("resources/models/uv_sphere.obj");
-	//backpack = new Model("resources/models/backpack/backpack.obj");
 
 	//Tell opengl to create viewport
 	glViewport(0, 0, WIDTH, HEIGHT);
@@ -141,18 +145,17 @@ int main() {
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 			renderStarBox();
-			//renderSkyBox();
-			//renderTerrain();
-
-			float t = glfwGetTime();
-
 			renderPlanet();
+			renderMars();
+
+			//float t = glfwGetTime();
+
 			//Swap & Poll	
 			glfwSwapBuffers(window);
 			glfwPollEvents();
 
-			//std::cout << distance(cameraPosition.x, cameraPosition.y, cameraPosition.z, 10, 10, 10) << std::endl;
 
+			//std::cout << distance(cameraPosition.x, cameraPosition.y, cameraPosition.z, 10, 10, 10) << std::endl;
 			if (distance(cameraPosition.x, cameraPosition.y, cameraPosition.z, 10, 10, 10) < 120)
 			{
 				std::cout << "Im in the world switch modes" << std::endl;
@@ -183,7 +186,7 @@ int main() {
 				modes = 0;
 			}
 		}
-		//Other Planet
+		//On Mars
 		else if (modes == 2)
 		{
 			std::cout << "modes 2" << std::endl;
@@ -409,22 +412,22 @@ void processInput(GLFWwindow* window)
 	bool camChanged = false;
 	if (keys[GLFW_KEY_W])
 	{
-		cameraPosition += camQuat * glm::vec3(0, 0, 1);
+		cameraPosition += camQuat * glm::vec3(0, 0, 10);
 		camChanged = true;
 	}
 	if (keys[GLFW_KEY_A])
 	{
-		cameraPosition += camQuat * glm::vec3(1, 0, 0);
+		cameraPosition += camQuat * glm::vec3(10, 0, 0);
 		camChanged = true;
 	}
 	if (keys[GLFW_KEY_S])
 	{
-		cameraPosition += camQuat * glm::vec3(0, 0, -1);
+		cameraPosition += camQuat * glm::vec3(0, 0, -10);
 		camChanged = true;
 	}
 	if (keys[GLFW_KEY_D])
 	{
-		cameraPosition += camQuat * glm::vec3(-1, 0, 0);
+		cameraPosition += camQuat * glm::vec3(-10, 0, 0);
 		camChanged = true;
 	}
 
@@ -680,6 +683,10 @@ void createShaders()
 
 	createProgram(moonProgram, "resources/shaders/model.vs", "resources/shaders/moon.fs");
 
+	createProgram(marsProgram, "resources/shaders/model.vs", "resources/shaders/mars.fs");
+
+	createProgram(phobosProgram, "resources/shaders/model.vs", "resources/shaders/moon.fs");
+	createProgram(deimosProgram, "resources/shaders/model.vs", "resources/shaders/moon.fs");
 }
 
 void createProgram(GLuint& programID, const char* vertex, const char* fragment)
@@ -902,13 +909,13 @@ void renderPlanet()
 
 	glUseProgram(planetProgram);
 
-	glm::mat4 world = glm::mat4(1.0f);
-	world = glm::translate(world, glm::vec3(0, 0, 0));
-	world = glm::scale(world, glm::vec3(100, 100, 100));
-	world = glm::rotate(world, glm::radians(23.0f), glm::vec3(1, 0, 0));
-	world = glm::rotate(world, glm::radians((float)glfwGetTime()), glm::vec3(0, 1, 0));
+	glm::mat4 earthWorld = glm::mat4(1.0f);
+	earthWorld = glm::translate(earthWorld, glm::vec3(0, 0, 0));
+	earthWorld = glm::scale(earthWorld, glm::vec3(100, 100, 100));
+	earthWorld = glm::rotate(earthWorld, glm::radians(23.0f), glm::vec3(1, 0, 0));
+	earthWorld = glm::rotate(earthWorld, glm::radians((float)glfwGetTime()), glm::vec3(0, 1, 0));
 
-	glUniformMatrix4fv(glGetUniformLocation(planetProgram, "world"), 1, GL_FALSE, glm::value_ptr(world));
+	glUniformMatrix4fv(glGetUniformLocation(planetProgram, "world"), 1, GL_FALSE, glm::value_ptr(earthWorld));
 	glUniformMatrix4fv(glGetUniformLocation(planetProgram, "view"), 1, GL_FALSE, glm::value_ptr(view));
 	glUniformMatrix4fv(glGetUniformLocation(planetProgram, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
 
@@ -943,14 +950,14 @@ void renderMoon(glm::mat4 parentPosition)
 
 	glUseProgram(moonProgram);
 
-	glm::mat4 world = glm::mat4(1.0f);
-	world *= parentPosition;
-	world = glm::rotate(world, glm::radians(5.0f), glm::vec3(1, 0, 0));
-	world = glm::rotate(world, glm::radians((float)glfwGetTime() * (48 / 60.0f)), glm::vec3(0, 1, 0));
-	world = glm::translate(world, glm::vec3(0, 0, 6033));
-	world = glm::scale(world, glm::vec3(25, 25, 25));
+	glm::mat4 earthMoon = glm::mat4(1.0f);
+	earthMoon *= parentPosition;
+	earthMoon = glm::rotate(earthMoon, glm::radians(5.0f), glm::vec3(1, 0, 0));
+	earthMoon = glm::rotate(earthMoon, glm::radians((float)glfwGetTime() * (48 / 60.0f)), glm::vec3(0, 1, 0));
+	earthMoon = glm::translate(earthMoon, glm::vec3(0, 0, 1000));
+	earthMoon = glm::scale(earthMoon, glm::vec3(25, 25, 25));
 
-	glUniformMatrix4fv(glGetUniformLocation(moonProgram, "world"), 1, GL_FALSE, glm::value_ptr(world));
+	glUniformMatrix4fv(glGetUniformLocation(moonProgram, "world"), 1, GL_FALSE, glm::value_ptr(earthMoon));
 	glUniformMatrix4fv(glGetUniformLocation(moonProgram, "view"), 1, GL_FALSE, glm::value_ptr(view));
 	glUniformMatrix4fv(glGetUniformLocation(moonProgram, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
 
@@ -961,6 +968,106 @@ void renderMoon(glm::mat4 parentPosition)
 	glBindTexture(GL_TEXTURE_2D, moon);
 
 	sphere->Draw(moonProgram);
+
+	glDisable(GL_BLEND);
+}
+
+void renderMars()
+{
+	glEnable(GL_DEPTH);
+	glEnable(GL_DEPTH_TEST);
+	glEnable(GL_CULL_FACE);
+	glCullFace(GL_BACK);
+
+	glUseProgram(marsProgram);
+
+	glm::vec3 marsPosition = glm::vec3(5000,0,0);
+
+	glm::mat4 marsWorld = glm::mat4(1.0f);
+	marsWorld = glm::translate(marsWorld, marsPosition);
+	marsWorld = glm::scale(marsWorld, glm::vec3(50, 50, 50));
+	marsWorld = glm::rotate(marsWorld, glm::radians(115.0f), glm::vec3(1, 0, 0));
+	marsWorld = glm::rotate(marsWorld, glm::radians((float)glfwGetTime()) * 2, glm::vec3(0, 1, 0));
+
+	glUniformMatrix4fv(glGetUniformLocation(marsProgram, "world"), 1, GL_FALSE, glm::value_ptr(marsWorld));
+	glUniformMatrix4fv(glGetUniformLocation(marsProgram, "view"), 1, GL_FALSE, glm::value_ptr(view));
+	glUniformMatrix4fv(glGetUniformLocation(marsProgram, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
+
+	glUniform3fv(glGetUniformLocation(marsProgram, "lightDirection"), 1, glm::value_ptr(lightDirection));
+	glUniform3fv(glGetUniformLocation(marsProgram, "cameraPosition"), 1, glm::value_ptr(cameraPosition));
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, mars);
+
+	sphere->Draw(marsProgram);
+
+	glDisable(GL_BLEND);
+
+	glm::mat4 parentPosition = glm::mat4(1.0f);
+	parentPosition = glm::translate(parentPosition, marsPosition);
+
+	renderPhobos(parentPosition);
+	renderDeimos(parentPosition);
+}
+
+void renderPhobos(glm::mat4 parentPosition)
+{
+	glEnable(GL_DEPTH);
+	glEnable(GL_DEPTH_TEST);
+	glEnable(GL_CULL_FACE);
+	glCullFace(GL_BACK);
+
+	glUseProgram(phobosProgram);
+
+	glm::mat4 phobosMoon = glm::mat4(1.0f);
+	phobosMoon *= parentPosition;
+	phobosMoon = glm::rotate(phobosMoon, glm::radians(0.0f), glm::vec3(1, 0, 0));
+	phobosMoon = glm::rotate(phobosMoon, glm::radians((float)glfwGetTime() * 1 * (48 / 60.0f)), glm::vec3(0, 1, 0));
+	phobosMoon = glm::translate(phobosMoon, glm::vec3(1000, 0, 0));
+	phobosMoon = glm::scale(phobosMoon, glm::vec3(8, 8, 8));
+
+	glUniformMatrix4fv(glGetUniformLocation(phobosProgram, "world"), 1, GL_FALSE, glm::value_ptr(phobosMoon));
+	glUniformMatrix4fv(glGetUniformLocation(phobosProgram, "view"), 1, GL_FALSE, glm::value_ptr(view));
+	glUniformMatrix4fv(glGetUniformLocation(phobosProgram, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
+
+	glUniform3fv(glGetUniformLocation(phobosProgram, "lightDirection"), 1, glm::value_ptr(lightDirection));
+	glUniform3fv(glGetUniformLocation(phobosProgram, "cameraPosition"), 1, glm::value_ptr(cameraPosition));
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, phobos);
+
+	sphere->Draw(phobosProgram);
+
+	glDisable(GL_BLEND);
+}
+
+void renderDeimos(glm::mat4 parentPosition)
+{
+	glEnable(GL_DEPTH);
+	glEnable(GL_DEPTH_TEST);
+	glEnable(GL_CULL_FACE);
+	glCullFace(GL_BACK);
+
+	glUseProgram(deimosProgram);
+
+	glm::mat4 deimosMoon = glm::mat4(1.0f);
+	deimosMoon *= parentPosition;
+	deimosMoon = glm::rotate(deimosMoon, glm::radians(0.0f), glm::vec3(1, 0, 0));
+	deimosMoon = glm::rotate(deimosMoon, glm::radians((float)glfwGetTime() * 2 * (48 / 60.0f)), glm::vec3(0, 1, 0));
+	deimosMoon = glm::translate(deimosMoon, glm::vec3(0, 0, 1800));
+	deimosMoon = glm::scale(deimosMoon, glm::vec3(4, 4, 4));
+
+	glUniformMatrix4fv(glGetUniformLocation(deimosProgram, "world"), 1, GL_FALSE, glm::value_ptr(deimosMoon));
+	glUniformMatrix4fv(glGetUniformLocation(deimosProgram, "view"), 1, GL_FALSE, glm::value_ptr(view));
+	glUniformMatrix4fv(glGetUniformLocation(deimosProgram, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
+
+	glUniform3fv(glGetUniformLocation(deimosProgram, "lightDirection"), 1, glm::value_ptr(lightDirection));
+	glUniform3fv(glGetUniformLocation(deimosProgram, "cameraPosition"), 1, glm::value_ptr(cameraPosition));
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, deimos);
+
+	sphere->Draw(deimosProgram);
 
 	glDisable(GL_BLEND);
 }
