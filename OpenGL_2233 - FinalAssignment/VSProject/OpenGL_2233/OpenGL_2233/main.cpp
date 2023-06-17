@@ -29,6 +29,7 @@ void renderTerrain();
 void renderModel(Model* model, glm::vec3 pos, glm::vec3 rot, glm::vec3 scale);
 void renderPlanet();
 void renderMoon(glm::mat4 parentPosition);
+float distance(int x1, int y1, int z1, int x2, int y2, int z2);
 
 unsigned int GeneratePlane(const char* heightmap, unsigned char*& data, GLenum format, int comp, float hScale, float xzScale, unsigned int& indexCount, unsigned int& heightmapID);
 
@@ -69,7 +70,6 @@ GLuint dirt, sand, grass, snow, rock, cubeMap, day, night, clouds, moon;
 Model* backpack, * sphere;
 
 int modes = 0;
-glm::vec3 earthPos;
 
 
 int main() {
@@ -130,6 +130,7 @@ int main() {
 	//Rendering loop
 	while (!glfwWindowShouldClose(window))
 	{
+		//Space
 		if (modes == 0)
 		{
 			//Input
@@ -150,17 +151,15 @@ int main() {
 			glfwSwapBuffers(window);
 			glfwPollEvents();
 
-			//std::cout << "x: " << cameraPosition.x << std::endl;
-			//std::cout << "y: " << cameraPosition.x << std::endl;
-			//std::cout << "z: " << cameraPosition.x << std::endl;
-			
-			if (cameraPosition.x < 10 && cameraPosition.x > -10)
+			//std::cout << distance(cameraPosition.x, cameraPosition.y, cameraPosition.z, 10, 10, 10) << std::endl;
+
+			if (distance(cameraPosition.x, cameraPosition.y, cameraPosition.z, 10, 10, 10) < 120)
 			{
 				std::cout << "Im in the world switch modes" << std::endl;
 				modes = 1;
 			}
-			
 		}
+		//On Earth
 		else if (modes == 1)
 		{
 			std::cout << "modes 1" << std::endl;
@@ -184,15 +183,11 @@ int main() {
 				modes = 0;
 			}
 		}
+		//Other Planet
 		else if (modes == 2)
 		{
 			std::cout << "modes 2" << std::endl;
-			glfwTerminate();
-			return 0;
 		}
-
-		//Rotates cube
-		//world = glm::rotate(world, (float)glfwGetTime()/1000, glm::vec3(01.0f, 1.0f, 1.0f));
 	}
 
 	glfwTerminate();
@@ -968,4 +963,10 @@ void renderMoon(glm::mat4 parentPosition)
 	sphere->Draw(moonProgram);
 
 	glDisable(GL_BLEND);
+}
+
+// Calculating distance
+float distance(int x1, int y1, int z1, int x2, int y2, int z2)
+{
+	return sqrt(pow(x2 - x1, 2) + pow(y2 - y1, 2) + pow(z2 - z1, 2) * 1.0);
 }
