@@ -147,19 +147,21 @@
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="shaders\model.fs" />
-    <None Include="shaders\model.vs" />
-    <None Include="shaders\simpleFragment.shader" />
-    <None Include="shaders\simpleVertex.shader" />
-    <None Include="shaders\skyFragment.shader" />
-    <None Include="shaders\skyVertex.shader" />
-    <None Include="shaders\terrainFragment.shader" />
-    <None Include="shaders\terrainVertex.shader" />
-  </ItemGroup>
-  <ItemGroup>
     <ClInclude Include="mesh.h" />
     <ClInclude Include="model.h" />
     <ClInclude Include="stb_image.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="resources\shaders\model.fs" />
+    <None Include="resources\shaders\model.vs" />
+    <None Include="resources\shaders\planet.fs" />
+    <None Include="resources\shaders\simpleFragment.shader" />
+    <None Include="resources\shaders\simpleVertex.shader" />
+    <None Include="resources\shaders\skyFragment.shader" />
+    <None Include="resources\shaders\skyVertex.shader" />
+    <None Include="resources\shaders\starBox.fs" />
+    <None Include="resources\shaders\terrainFragment.shader" />
+    <None Include="resources\shaders\terrainVertex.shader" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

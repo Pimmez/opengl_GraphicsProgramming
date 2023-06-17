@@ -21,10 +21,14 @@ int init(GLFWwindow*& window);
 void createGeometry(GLuint& vao, GLuint &ebo, int& size, int& numIndices);
 void createShaders();
 void createProgram(GLuint& programID, const char* vertex, const char* fragment);
-GLuint loadTexture(const char* path, int comp = 0);
+GLuint loadTexture(const char* path, int comp = 0, GLint wrapTypeS = GL_CLAMP_TO_EDGE, GLint wrapTypeT = GL_CLAMP_TO_EDGE);
+GLuint LoadCubeMap(std::vector<string> fileNames, int comp = 0);
 void renderSkyBox();
+void renderStarBox();
 void renderTerrain();
 void renderModel(Model* model, glm::vec3 pos, glm::vec3 rot, glm::vec3 scale);
+void renderPlanet();
+void renderMoon();
 
 unsigned int GeneratePlane(const char* heightmap, unsigned char* &data, GLenum format, int comp, float hScale, float xzScale, unsigned int& indexCount, unsigned int& heightmapID);
 
@@ -39,13 +43,13 @@ bool keys[1024];
 void loadFile(const char* filename, char*& output);
 
 //Shader Programs
-GLuint simpleProgram, skyProgram, terrainProgram, modelProgram;
+GLuint simpleProgram, skyProgram, terrainProgram, modelProgram, starProgram, planetProgram, moonProgram;
 
 const int WIDTH = 1280, HEIGHT = 720;
 
 //World Data
-glm::vec3 lightDirection = glm::normalize(glm::vec3(-0.5f, -0.5f, -0.5f));
-glm::vec3 cameraPosition = glm::vec3(100.0f, 125.5f, 100.0f);
+glm::vec3 lightDirection = glm::normalize(glm::vec3(1.0f, 0, 0));
+glm::vec3 cameraPosition = glm::vec3(0.0f, 0.0f, -150.0f);
 
 
 GLuint boxVAO, boxEBO;
@@ -61,9 +65,9 @@ glm::quat camQuat = glm::quat(glm::vec3(glm::radians(camPitch), glm::radians(cam
 GLuint terrainVAO, terrainIndexCount, heightmapID, heightNormalID;
 unsigned char* heightmapTexture;
 
-GLuint dirt, sand, grass, snow, rock;
+GLuint dirt, sand, grass, snow, rock, cubeMap, day, night, clouds, moon;
 
-Model* backpack;
+Model *backpack, *sphere;
 
 int main() {
 
@@ -75,24 +79,44 @@ int main() {
 		return result;
 	}
 	
-	stbi_set_flip_vertically_on_load(true);
 
 	createShaders();
 	createGeometry(boxVAO, boxEBO, boxSize, boxIndexCount);
 
-	terrainVAO = GeneratePlane("textures/heightmap.png", heightmapTexture, GL_RGBA, 4, 250.0f, 5.0f, terrainIndexCount, heightmapID);
-	heightNormalID = loadTexture("textures/heightnormal.png");
+	//terrainVAO = GeneratePlane("resources/textures/heightmap.png", heightmapTexture, GL_RGBA, 4, 250.0f, 5.0f, terrainIndexCount, heightmapID);
+	//heightNormalID = loadTexture("resources/textures/heightnormal.png");
 	 
-	GLuint boxTex = loadTexture("textures/container.png");
-	GLuint boxNormal = loadTexture("textures/container_normalMap.png");
+	//GLuint boxTex = loadTexture("resources/textures/container.png");
+	//GLuint boxNormal = loadTexture("resources/textures/container_normalMap.png");
 
-	dirt = loadTexture("textures/dirt.jpg");
-	snow = loadTexture("textures/snow.jpg");
-	sand = loadTexture("textures/sand.jpg");
-	rock = loadTexture("textures/rock.jpg");
-	grass = loadTexture("textures/grass.png", 4);
+	//dirt = loadTexture("resources/textures/dirt.jpg");
+	//snow = loadTexture("resources/textures/snow.jpg");
+	//sand = loadTexture("resources/textures/sand.jpg");
+	//rock = loadTexture("resources/textures/rock.jpg");
+	//grass = loadTexture("resources/textures/grass.png", 4);
 
-	backpack = new Model("models/backpack/backpack.obj");
+	day = loadTexture("resources/textures/day.jpg");
+	night = loadTexture("resources/textures/night.jpg");
+	clouds = loadTexture("resources/textures/clouds.jpg", 0, GL_REPEAT, GL_CLAMP_TO_EDGE);
+	moon = loadTexture("resources/textures/2k_moon.jpg");
+
+
+	std::vector<string> fileNames =
+	{
+		"resources/textures/space-cubemap/right.png",
+		"resources/textures/space-cubemap/left.png",
+		"resources/textures/space-cubemap/top.png",
+		"resources/textures/space-cubemap/bottom.png",
+		"resources/textures/space-cubemap/front.png",
+		"resources/textures/space-cubemap/back.png"
+	};
+
+	cubeMap = LoadCubeMap(fileNames);
+
+	stbi_set_flip_vertically_on_load(true);
+
+	sphere = new Model("resources/models/uv_sphere.obj");
+	//backpack = new Model("resources/models/backpack/backpack.obj");
 
 	//Tell opengl to create viewport
 	glViewport(0, 0, WIDTH, HEIGHT);
@@ -111,13 +135,14 @@ int main() {
 		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		renderSkyBox();
-		renderTerrain();
+		renderStarBox();
+		//renderSkyBox();
+		//renderTerrain();
 
 		float t = glfwGetTime();
 
-		renderModel(backpack, glm::vec3(1000,100,1000), glm::vec3(0,t,0), glm::vec3(100,100,100));
-
+		//renderModel(backpack, glm::vec3(1000,100,1000), glm::vec3(0,t,0), glm::vec3(100,100,100));
+		renderPlanet();
 		//Swap & Poll	
 		glfwSwapBuffers(window);
 		glfwPollEvents();
@@ -155,8 +180,41 @@ void renderSkyBox()
 	glDrawElements(GL_TRIANGLES, boxIndexCount, GL_UNSIGNED_INT, 0);
 
 	glEnable(GL_CULL_FACE);
+	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_DEPTH);
 
+}
+
+void renderStarBox()
+{
+	//OpenGL Setup
+	glDisable(GL_CULL_FACE);
+	glDisable(GL_DEPTH_TEST);
+	glDisable(GL_DEPTH);
+
+	glUseProgram(starProgram);
+
+	glm::mat4 world = glm::mat4(1.0f);
+	world = glm::translate(world, cameraPosition);
+	world = glm::scale(world, glm::vec3(10, 10, 10));
+
+	glUniformMatrix4fv(glGetUniformLocation(starProgram, "world"), 1, GL_FALSE, glm::value_ptr(world));
+	glUniformMatrix4fv(glGetUniformLocation(starProgram, "view"), 1, GL_FALSE, glm::value_ptr(view));
+	glUniformMatrix4fv(glGetUniformLocation(starProgram, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
+
+	glUniform3fv(glGetUniformLocation(starProgram, "lightDirection"), 1, glm::value_ptr(lightDirection));
+	glUniform3fv(glGetUniformLocation(starProgram, "cameraPosition"), 1, glm::value_ptr(cameraPosition));
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, cubeMap);
+
+	//Rendering
+	glBindVertexArray(boxVAO);
+	glDrawElements(GL_TRIANGLES, boxIndexCount, GL_UNSIGNED_INT, 0);
+
+	glEnable(GL_CULL_FACE);
+	glEnable(GL_DEPTH_TEST);
+	glEnable(GL_DEPTH);
 }
 
 void renderTerrain()
@@ -543,15 +601,15 @@ void createGeometry(GLuint& vao, GLuint &ebo, int& size, int &numIndices)
 
 void createShaders()
 {
-	createProgram(simpleProgram, "shaders/simpleVertex.shader", "shaders/simpleFragment.shader");
+	createProgram(simpleProgram, "resources/shaders/simpleVertex.shader", "resources/shaders/simpleFragment.shader");
 	
 	//Set texture channels
 	glUseProgram(simpleProgram);
 	glUniform1i(glGetUniformLocation(simpleProgram, "mainTex"), 0);
 	glUniform1i(glGetUniformLocation(simpleProgram, "normalTex"), 1);
 	
-	createProgram(skyProgram, "shaders/skyVertex.shader", "shaders/skyFragment.shader");
-	createProgram(terrainProgram, "shaders/terrainVertex.shader", "shaders/terrainFragment.shader");
+	createProgram(skyProgram, "resources/shaders/skyVertex.shader", "resources/shaders/skyFragment.shader");
+	createProgram(terrainProgram, "resources/shaders/terrainVertex.shader", "resources/shaders/terrainFragment.shader");
 
 	glUseProgram(terrainProgram);
 	glUniform1i(glGetUniformLocation(terrainProgram, "mainTex"), 0);
@@ -563,7 +621,7 @@ void createShaders()
 	glUniform1i(glGetUniformLocation(terrainProgram, "grass"), 5);
 	glUniform1i(glGetUniformLocation(terrainProgram, "snow"), 6);
 
-	createProgram(modelProgram, "shaders/model.vs", "shaders/model.fs");
+	createProgram(modelProgram, "resources/shaders/model.vs", "resources/shaders/model.fs");
 	
 	glUseProgram(modelProgram);
 	glUniform1i(glGetUniformLocation(modelProgram, "texture_diffuse1"), 0);
@@ -571,6 +629,15 @@ void createShaders()
 	glUniform1i(glGetUniformLocation(modelProgram, "texture_normal1"), 2);
 	glUniform1i(glGetUniformLocation(modelProgram, "texture_roughness1"), 3);
 	glUniform1i(glGetUniformLocation(modelProgram, "texture_ao1"), 4);
+
+	createProgram(starProgram, "resources/shaders/skyVertex.shader", "resources/shaders/starBox.fs");
+
+	createProgram(planetProgram, "resources/shaders/model.vs", "resources/shaders/planet.fs");
+
+	glUseProgram(planetProgram);
+	glUniform1i(glGetUniformLocation(planetProgram, "day"), 0);
+	glUniform1i(glGetUniformLocation(planetProgram, "night"), 1);
+	glUniform1i(glGetUniformLocation(planetProgram, "clouds"), 2);
 }
 
 void createProgram(GLuint& programID, const char* vertex, const char* fragment)
@@ -659,7 +726,7 @@ void loadFile(const char* filename, char*& output)
 	}
 }
 
-GLuint loadTexture(const char* path, int comp)
+GLuint loadTexture(const char* path, int comp, GLint wrapTypeS, GLint wrapTypeT)
 {
 	GLuint textureID;
 	glGenTextures(1, &textureID);
@@ -667,6 +734,8 @@ GLuint loadTexture(const char* path, int comp)
 
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrapTypeS);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrapTypeT);
 
 	int width, height, numChannels;
 	unsigned char* data = stbi_load(path, &width, &height, &numChannels, comp);
@@ -696,6 +765,49 @@ GLuint loadTexture(const char* path, int comp)
 
 	glBindTexture(GL_TEXTURE_2D, 0);
 
+	return textureID;
+}
+
+GLuint LoadCubeMap(std::vector<string> fileNames, int comp)
+{
+	GLuint textureID;
+	glGenTextures(1, &textureID);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, textureID);
+
+	int width, height, numChannels;
+	for (int i = 0; i < fileNames.size(); ++i)
+	{
+		unsigned char* data = stbi_load(fileNames[i].c_str(), &width, &height, &numChannels, comp);
+		if (data)
+		{
+			if (comp != 0)
+			{
+				numChannels = comp;
+			}
+
+			if (numChannels == 3)
+			{
+				glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+			}
+			else if (numChannels == 4)
+			{
+				glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+			}
+		}
+		else
+		{
+			std::cout << "ERROR LOADING TEXTURE" << fileNames[i].c_str() << std::endl;
+		}
+		stbi_image_free(data);
+	}
+	//Texture Settings
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+	glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
 	return textureID;
 }
 
@@ -729,7 +841,7 @@ void renderModel(Model* model, glm::vec3 pos, glm::vec3 rot, glm::vec3 scale)
 	glUniformMatrix4fv(glGetUniformLocation(modelProgram, "world"), 1, GL_FALSE, glm::value_ptr(world));
 	glUniformMatrix4fv(glGetUniformLocation(modelProgram, "view"), 1, GL_FALSE, glm::value_ptr(view));
 	glUniformMatrix4fv(glGetUniformLocation(modelProgram, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
-
+	 
 	glUniform3fv(glGetUniformLocation(modelProgram, "lightDirection"), 1, glm::value_ptr(lightDirection));
 	glUniform3fv(glGetUniformLocation(modelProgram, "cameraPosition"), 1, glm::value_ptr(cameraPosition));
 
@@ -737,4 +849,78 @@ void renderModel(Model* model, glm::vec3 pos, glm::vec3 rot, glm::vec3 scale)
 
 	glDisable(GL_BLEND);
 
+}
+
+void renderPlanet()
+{
+	glEnable(GL_DEPTH);
+	glEnable(GL_DEPTH_TEST);
+	glEnable(GL_CULL_FACE);
+	glCullFace(GL_BACK);
+
+	glUseProgram(planetProgram);
+
+	glm::mat4 world = glm::mat4(1.0f);
+	world = glm::translate(world, glm::vec3(0,0,0));
+	world = glm::scale(world, glm::vec3(100,100,100));
+	world = glm::rotate(world, glm::radians(23.0f), glm::vec3(1 ,0 ,0));
+	world = glm::rotate(world, glm::radians((float)glfwGetTime()), glm::vec3(0, 1, 0));
+
+	glUniformMatrix4fv(glGetUniformLocation(planetProgram, "world"), 1, GL_FALSE, glm::value_ptr(world));
+	glUniformMatrix4fv(glGetUniformLocation(planetProgram, "view"), 1, GL_FALSE, glm::value_ptr(view));
+	glUniformMatrix4fv(glGetUniformLocation(planetProgram, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
+
+	glUniform3fv(glGetUniformLocation(planetProgram, "lightDirection"), 1, glm::value_ptr(lightDirection));
+	glUniform3fv(glGetUniformLocation(planetProgram, "cameraPosition"), 1, glm::value_ptr(cameraPosition));
+
+	glUniform1f(glGetUniformLocation(planetProgram, "time"), (float)glfwGetTime());
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, day);
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, night);
+	glActiveTexture(GL_TEXTURE2);
+	glBindTexture(GL_TEXTURE_2D, clouds);
+
+	sphere->Draw(planetProgram);
+
+	glDisable(GL_BLEND);
+
+	renderMoon();
+}
+
+void renderMoon()
+{
+	glEnable(GL_DEPTH);
+	glEnable(GL_DEPTH_TEST);
+	glEnable(GL_CULL_FACE);
+	glCullFace(GL_BACK);
+
+	glUseProgram(planetProgram);
+
+	glm::mat4 world = glm::mat4(1.0f);
+	world = glm::translate(world, glm::vec3(0, 0, 0));
+	world = glm::scale(world, glm::vec3(100, 100, 100));
+	world = glm::rotate(world, glm::radians(23.0f), glm::vec3(1, 0, 0));
+	world = glm::rotate(world, glm::radians((float)glfwGetTime()), glm::vec3(0, 1, 0));
+
+	glUniformMatrix4fv(glGetUniformLocation(planetProgram, "world"), 1, GL_FALSE, glm::value_ptr(world));
+	glUniformMatrix4fv(glGetUniformLocation(planetProgram, "view"), 1, GL_FALSE, glm::value_ptr(view));
+	glUniformMatrix4fv(glGetUniformLocation(planetProgram, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
+
+	glUniform3fv(glGetUniformLocation(planetProgram, "lightDirection"), 1, glm::value_ptr(lightDirection));
+	glUniform3fv(glGetUniformLocation(planetProgram, "cameraPosition"), 1, glm::value_ptr(cameraPosition));
+
+	glUniform1f(glGetUniformLocation(planetProgram, "time"), (float)glfwGetTime());
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, day);
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, night);
+	glActiveTexture(GL_TEXTURE2);
+	glBindTexture(GL_TEXTURE_2D, clouds);
+
+	sphere->Draw(planetProgram);
+
+	glDisable(GL_BLEND);
 }
