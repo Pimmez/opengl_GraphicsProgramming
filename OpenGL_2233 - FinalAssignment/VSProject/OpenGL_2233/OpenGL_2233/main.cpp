@@ -112,6 +112,7 @@ int main() {
 		"resources/textures/space-cubemap/back.png"
 	};
 
+
 	cubeMap = LoadCubeMap(fileNames);
 
 	stbi_set_flip_vertically_on_load(true);
