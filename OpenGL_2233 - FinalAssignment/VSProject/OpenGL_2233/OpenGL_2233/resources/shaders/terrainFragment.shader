@@ -32,7 +32,7 @@ void main()
     normal.b = -normal.b;
     
     //Specular Data
-    vec3 viewDir = normalize(worldPosition.rgb - cameraPosition);
+    vec3 viewDir = normalize(worldPosition.rgb) - cameraPosition);
     //vec3 reflDir = normalize(reflect(lightDirection, normal));
     
     //lighting
