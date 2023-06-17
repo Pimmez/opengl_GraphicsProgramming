@@ -28,7 +28,7 @@ void renderStarBox();
 void renderTerrain();
 void renderModel(Model* model, glm::vec3 pos, glm::vec3 rot, glm::vec3 scale);
 void renderPlanet();
-void renderMoon();
+void renderMoon(glm::mat4 parentPosition);
 
 unsigned int GeneratePlane(const char* heightmap, unsigned char* &data, GLenum format, int comp, float hScale, float xzScale, unsigned int& indexCount, unsigned int& heightmapID);
 
@@ -123,7 +123,7 @@ int main() {
 
 	//Matrices!
 	view = glm::lookAt(cameraPosition, glm::vec3(0, 0, 0), glm::vec3(0, 1, 0));
-	projection = glm::perspective(glm::radians(45.0f), WIDTH / (float)HEIGHT, 0.1f, 5000.0f);
+	projection = glm::perspective(glm::radians(45.0f), WIDTH / (float)HEIGHT, 1.0f, 100000.0f);
 
 	//Rendering loop
 	while (!glfwWindowShouldClose(window))
@@ -370,22 +370,22 @@ void processInput(GLFWwindow* window)
 	bool camChanged = false;
 	if (keys[GLFW_KEY_W])
 	{
-		cameraPosition += camQuat * glm::vec3(0, 0, 1);
+		cameraPosition += camQuat * glm::vec3(0, 0, 10);
 		camChanged = true;
 	}
 	if (keys[GLFW_KEY_A])
 	{
-		cameraPosition += camQuat * glm::vec3(1, 0, 0);
+		cameraPosition += camQuat * glm::vec3(10, 0, 0);
 		camChanged = true;
 	}
 	if (keys[GLFW_KEY_S])
 	{
-		cameraPosition += camQuat * glm::vec3(0, 0, -1);
+		cameraPosition += camQuat * glm::vec3(0, 0, -10);
 		camChanged = true;
 	}
 	if (keys[GLFW_KEY_D])
 	{
-		cameraPosition += camQuat * glm::vec3(-1, 0, 0);
+		cameraPosition += camQuat * glm::vec3(-10, 0, 0);
 		camChanged = true;
 	}
 
@@ -638,6 +638,9 @@ void createShaders()
 	glUniform1i(glGetUniformLocation(planetProgram, "day"), 0);
 	glUniform1i(glGetUniformLocation(planetProgram, "night"), 1);
 	glUniform1i(glGetUniformLocation(planetProgram, "clouds"), 2);
+
+	createProgram(moonProgram, "resources/shaders/model.vs", "resources/shaders/moon.fs");
+
 }
 
 void createProgram(GLuint& programID, const char* vertex, const char* fragment)
@@ -886,41 +889,39 @@ void renderPlanet()
 
 	glDisable(GL_BLEND);
 
-	renderMoon();
+	glm::mat4 parentPosition = glm::mat4(1.0f);
+	parentPosition = glm::translate(parentPosition, glm::vec3(0, 0, 0));
+
+	renderMoon(parentPosition);
 }
 
-void renderMoon()
+void renderMoon(glm::mat4 parentPosition)
 {
 	glEnable(GL_DEPTH);
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_CULL_FACE);
 	glCullFace(GL_BACK);
 
-	glUseProgram(planetProgram);
+	glUseProgram(moonProgram);
 
 	glm::mat4 world = glm::mat4(1.0f);
-	world = glm::translate(world, glm::vec3(0, 0, 0));
-	world = glm::scale(world, glm::vec3(100, 100, 100));
-	world = glm::rotate(world, glm::radians(23.0f), glm::vec3(1, 0, 0));
-	world = glm::rotate(world, glm::radians((float)glfwGetTime()), glm::vec3(0, 1, 0));
+	world *= parentPosition;
+	world = glm::rotate(world, glm::radians(5.0f), glm::vec3(1, 0, 0));
+	world = glm::rotate(world, glm::radians((float)glfwGetTime() * (48 / 60.0f)), glm::vec3(0 ,1 ,0));
+	world = glm::translate(world, glm::vec3(0, 0, 6033));
+	world = glm::scale(world, glm::vec3(25, 25, 25));
 
-	glUniformMatrix4fv(glGetUniformLocation(planetProgram, "world"), 1, GL_FALSE, glm::value_ptr(world));
-	glUniformMatrix4fv(glGetUniformLocation(planetProgram, "view"), 1, GL_FALSE, glm::value_ptr(view));
-	glUniformMatrix4fv(glGetUniformLocation(planetProgram, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
+	glUniformMatrix4fv(glGetUniformLocation(moonProgram, "world"), 1, GL_FALSE, glm::value_ptr(world));
+	glUniformMatrix4fv(glGetUniformLocation(moonProgram, "view"), 1, GL_FALSE, glm::value_ptr(view));
+	glUniformMatrix4fv(glGetUniformLocation(moonProgram, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
 
-	glUniform3fv(glGetUniformLocation(planetProgram, "lightDirection"), 1, glm::value_ptr(lightDirection));
-	glUniform3fv(glGetUniformLocation(planetProgram, "cameraPosition"), 1, glm::value_ptr(cameraPosition));
-
-	glUniform1f(glGetUniformLocation(planetProgram, "time"), (float)glfwGetTime());
+	glUniform3fv(glGetUniformLocation(moonProgram, "lightDirection"), 1, glm::value_ptr(lightDirection));
+	glUniform3fv(glGetUniformLocation(moonProgram, "cameraPosition"), 1, glm::value_ptr(cameraPosition));
 
 	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, day);
-	glActiveTexture(GL_TEXTURE1);
-	glBindTexture(GL_TEXTURE_2D, night);
-	glActiveTexture(GL_TEXTURE2);
-	glBindTexture(GL_TEXTURE_2D, clouds);
+	glBindTexture(GL_TEXTURE_2D, moon);
 
-	sphere->Draw(planetProgram);
+	sphere->Draw(moonProgram);
 
 	glDisable(GL_BLEND);
 }

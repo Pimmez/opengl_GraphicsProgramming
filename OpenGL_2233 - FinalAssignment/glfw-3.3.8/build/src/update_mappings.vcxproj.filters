@@ -1,0 +1,24 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <CustomBuild Include="C:\Users\phore\source\repos\OpenGL_2233\glfw-3.3.8\build\CMakeFiles\d6d6e5120c978015bf4fc25b03ac5e78\update_mappings.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="C:\Users\phore\source\repos\OpenGL_2233\glfw-3.3.8\src\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="C:\Users\phore\source\repos\OpenGL_2233\glfw-3.3.8\src\mappings.h.in">
+      <Filter>Header Files</Filter>
+    </None>
+    <None Include="C:\Users\phore\source\repos\OpenGL_2233\glfw-3.3.8\CMake\GenerateMappings.cmake" />
+    <None Include="C:\Users\phore\source\repos\OpenGL_2233\glfw-3.3.8\build\src\CMakeFiles\update_mappings" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="CMake Rules">
+      <UniqueIdentifier>{5D4182A6-C926-3A29-892E-BE505DB811B7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{732FD85A-9EE6-3EA9-A106-F241C1FE05CB}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>
