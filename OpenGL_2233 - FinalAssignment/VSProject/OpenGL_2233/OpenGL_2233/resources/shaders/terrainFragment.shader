@@ -78,7 +78,7 @@ void main()
     vec3 fogColor = lerp(botColor, topColor, max(viewDir.y, 0.0));
     
     //Separate RGB and RGBA Calculations
-    vec4 output = vec4(lerp(diffuse * min(lightValue + 0.1, 1.0), fogColor, fog), 1.0); // //+specular * output.rgb;
+    vec4 output = vec4(diffuse * min(lightValue + 0.1, 1.0), 1.0); // //+specular * output.rgb;
     
     FragColor = output;
 
