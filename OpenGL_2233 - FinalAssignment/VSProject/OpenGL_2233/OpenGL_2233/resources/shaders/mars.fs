@@ -26,15 +26,15 @@ void main()
 {    
     vec4 diffuseColor = texture(diffuse, TexCoords);
 
-    float light = max(dot(-lightDirection, Normals + 0.1), 0.0); //set de edge iets meer naar achter met +.25
-    light = pow(light * 64.0, 2.0) / 64.0; //16 is de edge waarden van de light/dark planet edge
+    float light = max(dot(-lightDirection, Normals + 0.25), 0.0); //set de edge iets meer naar achter met +.25
+    light = pow(light * 16.0, 2.0) / 16.0; //16 is de edge waarden van de light/dark planet edge
     light = max(min(light, 1.0), 0.0);
 
     vec3 viewDir = normalize(FragPos.rgb - cameraPosition);
     vec3 refl = reflect(lightDirection, Normals);
-    float spec = pow(max(dot(-viewDir, refl), 0.0), 2.0);
-       
-    vec3 specular = spec * vec3(0.2, 0.2 ,0.2);
+    float spec = pow(max(dot(-viewDir, refl), 0.0), 6.0);
+    
+    vec3 specular = spec * vec3(0.6, 0.3 ,0.2);
 
     vec4 output = diffuseColor * light + vec4(specular, 0);
 

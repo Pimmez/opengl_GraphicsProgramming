@@ -42,7 +42,6 @@ void main()
    
     vec3 specular = (spec + fresnel * 2 * light) * vec3(0.2, 0.3 ,0.6);
 
-
     vec4 output = lerp(lerp(nightColor, dayColor, light), cloudsColor * 1.2 * light, cloudsColor.r) + vec4(specular, 0);
 
     FragColor = output;

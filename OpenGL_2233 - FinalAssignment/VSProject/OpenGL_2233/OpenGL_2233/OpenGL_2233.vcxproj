@@ -164,6 +164,7 @@
     <ClInclude Include="stb_image.h" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="resources\shaders\jupiter.fs" />
     <None Include="resources\shaders\mars.fs" />
     <None Include="resources\shaders\model.fs" />
     <None Include="resources\shaders\model.vs" />

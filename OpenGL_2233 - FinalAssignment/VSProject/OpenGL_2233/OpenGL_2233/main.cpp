@@ -1190,7 +1190,7 @@ void renderEuropa(glm::mat4 parentPosition)
 	glUniform3fv(glGetUniformLocation(europaProgram, "cameraPosition"), 1, glm::value_ptr(cameraPosition));
 
 	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, io);
+	glBindTexture(GL_TEXTURE_2D, europa);
 
 	sphere->Draw(europaProgram);
 
