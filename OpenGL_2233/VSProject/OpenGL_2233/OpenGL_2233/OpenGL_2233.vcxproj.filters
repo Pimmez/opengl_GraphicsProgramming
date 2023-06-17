@@ -13,8 +13,11 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
-    <Filter Include="Resource Files\shaders">
-      <UniqueIdentifier>{8f77f401-f7f6-4ac5-b4b5-e3cec06129e0}</UniqueIdentifier>
+    <Filter Include="Resource Files\resources">
+      <UniqueIdentifier>{8ecbeb20-f8f0-432c-94aa-f24abdc1a5b3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files\resources\shaders">
+      <UniqueIdentifier>{425c8707-9e8f-4ebf-b4ce-2a86f3be90ad}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -26,32 +29,6 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="shaders\simpleFragment.shader">
-      <Filter>Resource Files\shaders</Filter>
-    </None>
-    <None Include="shaders\simpleVertex.shader">
-      <Filter>Resource Files\shaders</Filter>
-    </None>
-    <None Include="shaders\skyFragment.shader">
-      <Filter>Resource Files\shaders</Filter>
-    </None>
-    <None Include="shaders\skyVertex.shader">
-      <Filter>Resource Files\shaders</Filter>
-    </None>
-    <None Include="shaders\terrainFragment.shader">
-      <Filter>Resource Files\shaders</Filter>
-    </None>
-    <None Include="shaders\terrainVertex.shader">
-      <Filter>Resource Files\shaders</Filter>
-    </None>
-    <None Include="shaders\model.fs">
-      <Filter>Resource Files\shaders</Filter>
-    </None>
-    <None Include="shaders\model.vs">
-      <Filter>Resource Files\shaders</Filter>
-    </None>
-  </ItemGroup>
-  <ItemGroup>
     <ClInclude Include="stb_image.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -61,5 +38,34 @@
     <ClInclude Include="model.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="resources\shaders\model.fs">
+      <Filter>Resource Files\resources\shaders</Filter>
+    </None>
+    <None Include="resources\shaders\model.vs">
+      <Filter>Resource Files\resources\shaders</Filter>
+    </None>
+    <None Include="resources\shaders\simpleFragment.shader">
+      <Filter>Resource Files\resources\shaders</Filter>
+    </None>
+    <None Include="resources\shaders\simpleVertex.shader">
+      <Filter>Resource Files\resources\shaders</Filter>
+    </None>
+    <None Include="resources\shaders\skyFragment.shader">
+      <Filter>Resource Files\resources\shaders</Filter>
+    </None>
+    <None Include="resources\shaders\skyVertex.shader">
+      <Filter>Resource Files\resources\shaders</Filter>
+    </None>
+    <None Include="resources\shaders\terrainFragment.shader">
+      <Filter>Resource Files\resources\shaders</Filter>
+    </None>
+    <None Include="resources\shaders\terrainVertex.shader">
+      <Filter>Resource Files\resources\shaders</Filter>
+    </None>
+    <None Include="resources\shaders\starBox.fs">
+      <Filter>Resource Files\resources\shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>
