@@ -24,8 +24,10 @@ void createProgram(GLuint& programID, const char* vertex, const char* fragment);
 GLuint loadTexture(const char* path, int comp = 0, GLint wrapTypeS = GL_CLAMP_TO_EDGE, GLint wrapTypeT = GL_CLAMP_TO_EDGE);
 GLuint LoadCubeMap(std::vector<string> fileNames, int comp = 0);
 void renderSkyBox();
+void renderMarsSkyBox();
 void renderStarBox();
 void renderTerrain();
+void renderMarsTerrain();
 void renderModel(Model* model, glm::vec3 pos, glm::vec3 rot, glm::vec3 scale);
 void renderPlanet();
 void renderMoon(glm::mat4 parentPosition);
@@ -51,13 +53,14 @@ void loadFile(const char* filename, char*& output);
 float distance(int x1, int y1, int z1, int x2, int y2, int z2);
 
 //Shader Programs
-GLuint simpleProgram, skyProgram, terrainProgram, modelProgram, starProgram, planetProgram, moonProgram, marsProgram, phobosProgram, deimosProgram, jupiterProgram, ioProgram, europaProgram;
+GLuint simpleProgram, skyProgram, marsSkyProgram, terrainProgram, marsTerrainProgram, modelProgram, starProgram, planetProgram, moonProgram, marsProgram, phobosProgram, deimosProgram, jupiterProgram, ioProgram, europaProgram;
 
+//Window Size
 const int WIDTH = 1920, HEIGHT = 1080;
 
 //World Data
 glm::vec3 lightDirection = glm::normalize(glm::vec3(1.0f, 0, 0));
-glm::vec3 cameraPosition = glm::vec3(20.0f, 0.0f, -150.0f);
+glm::vec3 cameraPosition = glm::vec3(100.0f, 0.0f, -150.0f);
 
 GLuint boxVAO, boxEBO;
 int boxSize, boxIndexCount;
@@ -68,17 +71,16 @@ bool firstMouse = true;
 float camYaw, camPitch;
 glm::quat camQuat = glm::quat(glm::vec3(glm::radians(camPitch), glm::radians(camYaw), 0));
 
-//Terrain Data
-GLuint terrainVAO, terrainIndexCount, heightmapID, heightNormalID;
-unsigned char* heightmapTexture;
+Model* spaceShip, * sphere;
 
-GLuint dirt, sand, grass, snow, rock, cubeMap, day, night, clouds, moon, mars, phobos, deimos, jupiter, io, europa;
-
-Model *spaceShip, *sphere;
-
-//modes
 int modes = 0;
 float cameraSpeed = 10;
+glm::vec3 marsPos;
+
+//Terrain Data
+GLuint terrainVAO, terrainIndexCount, heightmapID, marsHeightMapID, heightNormalID, marsHeightNormalID, marsTerrainVAO;
+unsigned char* heightmapTexture;
+GLuint dirt, sand, grass, snow, rock, cubeMap, day, night, clouds, moon, mars, phobos, deimos, jupiter, io, europa;
 
 
 int main() {
@@ -96,7 +98,10 @@ int main() {
 
 	terrainVAO = GeneratePlane("resources/textures/heightmap.png", heightmapTexture, GL_RGBA, 4, 250.0f, 5.0f, terrainIndexCount, heightmapID);
 	heightNormalID = loadTexture("resources/textures/heightnormal.png");
+	marsTerrainVAO = GeneratePlane("resources/textures/heightmap2.png", heightmapTexture, GL_RGBA, 4, 250.0f, 5.0f, terrainIndexCount, marsHeightMapID);
+	marsHeightNormalID = loadTexture("resources/textures/heightnormal2.png");
 
+	
 	//Terrain Textures
 	dirt = loadTexture("resources/textures/dirt.jpg");
 	snow = loadTexture("resources/textures/snow.jpg");
@@ -133,6 +138,7 @@ int main() {
 
 	stbi_set_flip_vertically_on_load(true);
 
+	//Set models
 	sphere = new Model("resources/models/uv_sphere.obj");
 	spaceShip = new Model("resources/models/spaceShip.obj");
 
@@ -142,6 +148,7 @@ int main() {
 	//Matrices!
 	view = glm::lookAt(cameraPosition, glm::vec3(0, 0, 0), glm::vec3(0, 1, 0));
 	projection = glm::perspective(glm::radians(45.0f), WIDTH / (float)HEIGHT, 1.0f, 100000.0f);
+
 
 	//Rendering loop
 	while (!glfwWindowShouldClose(window))
@@ -160,23 +167,24 @@ int main() {
 			renderPlanet();
 			renderMars();
 			renderJupiter();
-			//renderModel(spaceShip, glm::vec3(cameraPosition.x, cameraPosition.y, cameraPosition.z), glm::vec3(cameraPosition.x, cameraPosition.y, cameraPosition.z), glm::vec3(5, 5, 5));
 
 			//Swap & Poll	
 			glfwSwapBuffers(window);
 			glfwPollEvents();
 			
-			//std::cout << distance(cameraPosition.x, cameraPosition.y, cameraPosition.z, 10, 10, 10) << std::endl;
 			if (distance(cameraPosition.x, cameraPosition.y, cameraPosition.z, 10, 10, 10) < 120)
 			{
-				//std::cout << "Im in the world switch modes" << std::endl;
 				modes = 1;
+			}
+
+			if (distance(cameraPosition.x, cameraPosition.y, cameraPosition.z, marsPos.x, marsPos.y, marsPos.z) < 120)
+			{
+				modes = 2;
 			}
 		}
 		//On Earth
 		else if (modes == 1)
 		{
-			//std::cout << "modes 1" << std::endl;
 			//Input
 			processInput(window);
 
@@ -186,22 +194,39 @@ int main() {
 			
 			renderSkyBox();
 			renderTerrain();
-			
+			renderModel(spaceShip, glm::vec3(0, 0, 0), glm::vec3(0, 0, 0), glm::vec3(5, 5, 5));
 
 			//Swap & Poll	
 			glfwSwapBuffers(window);
 			glfwPollEvents();
 
-			if (cameraPosition.y > 1000)
+			if (cameraPosition.y > 500)
 			{
-				std::cout << "Im in going to space switch modes" << std::endl;
 				modes = 0;
 			}
 		}
 		//On Mars
 		else if (modes == 2)
 		{
-			std::cout << "modes 2" << std::endl;
+			//Input
+			processInput(window);
+
+			//Rendering
+			glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+			renderMarsSkyBox();
+			renderMarsTerrain();
+			renderModel(spaceShip, glm::vec3(3000, 0, 0), glm::vec3(0, 0, 0), glm::vec3(5, 5, 5));
+
+			//Swap & Poll	
+			glfwSwapBuffers(window);
+			glfwPollEvents();
+
+			if (cameraPosition.y > 500)
+			{
+				modes = 0;
+			}
 		}
 	}
 
@@ -271,6 +296,35 @@ void renderStarBox()
 	glEnable(GL_DEPTH);
 }
 
+void renderMarsSkyBox()
+{
+	//OpenGL Setup
+	glDisable(GL_CULL_FACE);
+	glDisable(GL_DEPTH_TEST);
+	glDisable(GL_DEPTH);
+
+	glUseProgram(marsSkyProgram);
+
+	glm::mat4 marsSkyBox = glm::mat4(1.0f);
+	marsSkyBox = glm::translate(marsSkyBox, cameraPosition);
+	marsSkyBox = glm::scale(marsSkyBox, glm::vec3(100, 100, 100));
+
+	glUniformMatrix4fv(glGetUniformLocation(marsSkyProgram, "world"), 1, GL_FALSE, glm::value_ptr(marsSkyBox));
+	glUniformMatrix4fv(glGetUniformLocation(marsSkyProgram, "view"), 1, GL_FALSE, glm::value_ptr(view));
+	glUniformMatrix4fv(glGetUniformLocation(marsSkyProgram, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
+
+	glUniform3fv(glGetUniformLocation(marsSkyProgram, "lightDirection"), 1, glm::value_ptr(lightDirection));
+	glUniform3fv(glGetUniformLocation(marsSkyProgram, "cameraPosition"), 1, glm::value_ptr(cameraPosition));
+
+	//Rendering
+	glBindVertexArray(boxVAO);
+	glDrawElements(GL_TRIANGLES, boxIndexCount, GL_UNSIGNED_INT, 0);
+
+	glEnable(GL_CULL_FACE);
+	glEnable(GL_DEPTH_TEST);
+	glEnable(GL_DEPTH);
+}
+
 void renderTerrain()
 {
 	glEnable(GL_DEPTH);
@@ -287,8 +341,8 @@ void renderTerrain()
 	glUniformMatrix4fv(glGetUniformLocation(terrainProgram, "view"), 1, GL_FALSE, glm::value_ptr(view));
 	glUniformMatrix4fv(glGetUniformLocation(terrainProgram, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
 
-	//float t = glfwGetTime();
-	//lightDirection = glm::normalize(glm::vec3(glm::sin(t), -0.5f, glm::cos(t)));
+	float t = glfwGetTime() * 0.1;
+	lightDirection = glm::normalize(glm::vec3(glm::sin(t), -0.8f, glm::cos(t)));
 	glUniform3fv(glGetUniformLocation(terrainProgram, "lightDirection"), 1, glm::value_ptr(lightDirection));
 	glUniform3fv(glGetUniformLocation(terrainProgram, "cameraPosition"), 1, glm::value_ptr(cameraPosition));
 
@@ -310,6 +364,45 @@ void renderTerrain()
 
 	//Rendering
 	glBindVertexArray(terrainVAO);
+	glDrawElements(GL_TRIANGLES, terrainIndexCount, GL_UNSIGNED_INT, 0);
+
+}
+
+void renderMarsTerrain()
+{
+	glEnable(GL_DEPTH);
+	glEnable(GL_DEPTH_TEST);
+	glEnable(GL_CULL_FACE);
+	glCullFace(GL_BACK);
+
+	glUseProgram(marsTerrainProgram);
+
+	glm::mat4 world = glm::mat4(1.0f);
+	world = glm::translate(world, glm::vec3(2750, -100, -400));
+
+	glUniformMatrix4fv(glGetUniformLocation(marsTerrainProgram, "world"), 1, GL_FALSE, glm::value_ptr(world));
+	glUniformMatrix4fv(glGetUniformLocation(marsTerrainProgram, "view"), 1, GL_FALSE, glm::value_ptr(view));
+	glUniformMatrix4fv(glGetUniformLocation(marsTerrainProgram, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
+
+	float t = glfwGetTime() * 0.1;
+	lightDirection = glm::normalize(glm::vec3(glm::sin(t), -0.5f, glm::cos(t)));
+	glUniform3fv(glGetUniformLocation(marsTerrainProgram, "lightDirection"), 1, glm::value_ptr(lightDirection));
+	glUniform3fv(glGetUniformLocation(marsTerrainProgram, "cameraPosition"), 1, glm::value_ptr(cameraPosition));
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, marsHeightMapID);
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, marsHeightNormalID);
+
+	glActiveTexture(GL_TEXTURE2);
+	glBindTexture(GL_TEXTURE_2D, dirt);
+	glActiveTexture(GL_TEXTURE3);
+	glBindTexture(GL_TEXTURE_2D, sand);
+	glActiveTexture(GL_TEXTURE4);
+	glBindTexture(GL_TEXTURE_2D, rock);
+
+	//Rendering
+	glBindVertexArray(marsTerrainVAO);
 	glDrawElements(GL_TRIANGLES, terrainIndexCount, GL_UNSIGNED_INT, 0);
 
 }
@@ -431,22 +524,22 @@ void processInput(GLFWwindow* window)
 	bool camChanged = false;
 	if (keys[GLFW_KEY_W])
 	{
-		cameraPosition += camQuat * glm::vec3(0, 0, 10);
+		cameraPosition += camQuat * glm::vec3(0, 0, cameraSpeed);
 		camChanged = true;
 	}
 	if (keys[GLFW_KEY_A])
 	{
-		cameraPosition += camQuat * glm::vec3(10, 0, 0);
+		cameraPosition += camQuat * glm::vec3(cameraSpeed, 0, 0);
 		camChanged = true;
 	}
 	if (keys[GLFW_KEY_S])
 	{
-		cameraPosition += camQuat * glm::vec3(0, 0, -10);
+		cameraPosition += camQuat * glm::vec3(0, 0, -cameraSpeed);
 		camChanged = true;
 	}
 	if (keys[GLFW_KEY_D])
 	{
-		cameraPosition += camQuat * glm::vec3(-10, 0, 0);
+		cameraPosition += camQuat * glm::vec3(-cameraSpeed, 0, 0);
 		camChanged = true;
 	}
 
@@ -707,6 +800,17 @@ void createShaders()
 	createProgram(marsProgram, "resources/shaders/model.vs", "resources/shaders/mars.fs");
 	createProgram(phobosProgram, "resources/shaders/model.vs", "resources/shaders/moon.fs");
 	createProgram(deimosProgram, "resources/shaders/model.vs", "resources/shaders/moon.fs");
+
+	createProgram(marsSkyProgram, "resources/shaders/skyVertex.shader", "resources/shaders/marsSkyFragment.shader");
+	createProgram(marsTerrainProgram, "resources/shaders/terrainVertex.shader", "resources/shaders/marsTerrainFragment.shader");
+
+	glUseProgram(marsTerrainProgram);
+	glUniform1i(glGetUniformLocation(marsTerrainProgram, "mainTex"), 0);
+	glUniform1i(glGetUniformLocation(marsTerrainProgram, "normalTex"), 1);
+
+	glUniform1i(glGetUniformLocation(marsTerrainProgram, "dirt"), 2);
+	glUniform1i(glGetUniformLocation(marsTerrainProgram, "sand"), 3);
+	glUniform1i(glGetUniformLocation(marsTerrainProgram, "rock"), 4);
 
 	//Jupiter Planetary Chart
 	createProgram(jupiterProgram, "resources/shaders/model.vs", "resources/shaders/jupiter.fs");
@@ -1007,7 +1111,7 @@ void renderMars()
 	glUseProgram(marsProgram);
 
 	glm::vec3 marsPosition = glm::vec3(5000,0,0);
-
+	marsPos = marsPosition;
 	glm::mat4 marsWorld = glm::mat4(1.0f);
 	marsWorld = glm::translate(marsWorld, marsPosition);
 	marsWorld = glm::scale(marsWorld, glm::vec3(50, 50, 50));
@@ -1190,7 +1294,7 @@ void renderEuropa(glm::mat4 parentPosition)
 	glUniform3fv(glGetUniformLocation(europaProgram, "cameraPosition"), 1, glm::value_ptr(cameraPosition));
 
 	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, io);
+	glBindTexture(GL_TEXTURE_2D, europa);
 
 	sphere->Draw(europaProgram);
 

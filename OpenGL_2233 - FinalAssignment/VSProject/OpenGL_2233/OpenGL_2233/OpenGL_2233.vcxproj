@@ -164,7 +164,10 @@
     <ClInclude Include="stb_image.h" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="resources\shaders\jupiter.fs" />
     <None Include="resources\shaders\mars.fs" />
+    <None Include="resources\shaders\marsSkyFragment.shader" />
+    <None Include="resources\shaders\marsTerrainFragment.shader" />
     <None Include="resources\shaders\model.fs" />
     <None Include="resources\shaders\model.vs" />
     <None Include="resources\shaders\moon.fs" />
