@@ -80,5 +80,8 @@
     <None Include="resources\shaders\marsSkyFragment.shader">
       <Filter>Resource Files\resources\shaders</Filter>
     </None>
+    <None Include="resources\shaders\marsTerrainFragment.shader">
+      <Filter>Resource Files\resources\shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>

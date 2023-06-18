@@ -34,7 +34,7 @@ void main()
     vec3 refl = reflect(lightDirection, Normals);
     float spec = pow(max(dot(-viewDir, refl), 0.0), 6.0);
     
-    vec3 specular = spec * vec3(0.6, 0.3 ,0.2);
+    vec3 specular = spec * vec3(0.6, 0.3 ,0.2); //vec3 waardes geven een soort outline color in combinatie met de zon
 
     vec4 output = diffuseColor * light + vec4(specular, 0);
 
